@@ -4,25 +4,78 @@ import TextField from "@mui/material/TextField";
 import Paper from "@mui/material/Paper";
 import Button from "@mui/material/Button";
 
+import { Navigate, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { useForm } from "react-hook-form";
 import styles from "./Login.module.scss";
+import { fetchAuth, selectIsAuth } from "../../redux/slices/auth";
 
 export const Login = () => {
+  const isAuth = useSelector(selectIsAuth) // Burada bize deyir ki avtorizasiya olub ya olmayib
+  const dispatch = useDispatch();
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors, isValid },
+  } = useForm({
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+    mode: 'onChange',
+  });
+
+ 
+
+  const onSubmit = async(values) => {
+      //Bu funksiya o zaman isleyecek ki  eger react hook form anlayacaq ki doğrulama yaxşı keçdi
+    const data = await dispatch(fetchAuth(values))
+    
+    if(!data.payload){
+     return  alert('Daxil olmaq alınmadı')
+    }
+    if('token' in data.payload){
+      window.localStorage.setItem('token', data.payload.token);
+    }
+  
+  };
+
+
+  if(isAuth) {
+    return <Navigate to="/" />
+  }
+
+
   return (
-    <Paper classes={{ root: styles.root }}>
+    <Paper  classes={{ root: styles.root }}>
       <Typography classes={{ root: styles.title }} variant="h5">
         Вход в аккаунт
       </Typography>
-      <TextField
-        className={styles.field}
-        label="E-Mail"
-        error
-        helperText="Неверно указана почта"
-        fullWidth
-      />
-      <TextField className={styles.field} label="Пароль" fullWidth />
-      <Button size="large" variant="contained" fullWidth>
-        Войти
-      </Button>
+      <form onSubmit={handleSubmit(onSubmit)}>
+        {" "}
+        {/* handleSubmit => bu funksiyanı yerinə yetirdiyinizi təqdim edin və bu iki sahə düzgün idisə, onu yalnız bu mübahisədə yerinə yetirin* */}
+        <TextField
+          className={styles.field}
+          label="E-Mail"
+          type="email"
+          error={Boolean(errors.email?.message)}
+          helperText={errors.email?.message}
+          {...register("email", { required: "Emaili daxil edin!" })}
+          fullWidth
+        />
+        <TextField 
+        className={styles.field} 
+        type="password"
+        label="Пароль" fullWidth 
+        error={Boolean(errors.password?.message)}
+        helperText={errors.password?.message}
+        {...register('password',{required: 'Şifrəni daxil edin!'})}
+        />
+        <Button disabled={!isValid} type="submit" size="large" variant="contained" fullWidth>
+          Войти
+        </Button>
+      </form>
     </Paper>
   );
 };
